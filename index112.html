@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Reaction Buttons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .reactions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .reaction-btn {
+      border: none;
+      background: transparent;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 20px;
+    }
+    .reaction-btn.selected {
+      background-color: #bbb0c5;
+    }
+    .count {
+      font-size: 12px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="reactions" id="reactions"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "arrival-restock-arrangement.firebaseapp.com",
+      databaseURL: "https://featured-blog-lineup-default-rtdb.firebaseio.com",
+      projectId: "featured-blog-lineup",
+      storageBucket: "featured-blog-lineup.firebasestorage.app",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const articleID = "featured-blog_20260112";
+    const reactions = ["😊","🥰","✨","👍"];
+    const container = document.getElementById("reactions");
+
+    const userKey = localStorage.getItem(articleID) || null;
+
+    reactions.forEach(emoji => {
+      const btn = document.createElement("button");
+      btn.className = "reaction-btn";
+      btn.textContent = emoji;
+
+      const countSpan = document.createElement("span");
+      countSpan.className = "count";
+      btn.appendChild(countSpan);
+
+      const reactionRef = ref(db, `reactions/${articleID}/${emoji}`);
+
+      get(reactionRef).then(snapshot => {
+        countSpan.textContent = snapshot.exists() ? snapshot.val() : 0;
+      });
+
+      if (userKey === emoji) {
+        btn.classList.add("selected");
+      }
+
+      btn.onclick = async () => {
+        if (userKey) return;
+
+        const snap = await get(reactionRef);
+        const current = snap.exists() ? snap.val() : 0;
+        await set(reactionRef, current + 1);
+
+        localStorage.setItem(articleID, emoji);
+        btn.classList.add("selected");
+      };
+
+      container.appendChild(btn);
+    });
+  </script>
+</body>
+</html>
